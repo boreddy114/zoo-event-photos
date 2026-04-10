@@ -387,3 +387,36 @@ a {
 .mt-4 { margin-top: 1rem; }
 .text-teal { color: var(--color-teal); }
 .text-coral { color: var(--color-coral); }
+
+/* Responsive Mobile Styles */
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    padding: 1rem;
+    gap: 1rem;
+    text-align: center;
+  }
+  .container {
+    padding: 1rem;
+  }
+  .hero-pane-left, .hero-pane-right {
+    padding: 2rem 1rem;
+  }
+  .hero-pane-left h2, .hero-pane-right h2 {
+    font-size: 1.8rem;
+  }
+  .hero-pane-left p, .hero-pane-right p {
+    font-size: 1.1rem;
+    margin-bottom: 1.5rem;
+  }
+  .dropzone {
+    padding: 2rem 1rem;
+  }
+  .upload-container {
+    padding: 1.5rem;
+  }
+  .gallery-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 1rem;
+  }
+}
