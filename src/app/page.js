@@ -16,9 +16,12 @@ export default function Home() {
     <main>
       <header className="header">
         <div className="header-logo">
-          {/* A simple placeholder logo resembling CO4Kids */}
-          <div style={{ backgroundColor: 'var(--color-yellow)', width: '30px', height: '30px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-navy)', fontWeight: 'bold' }}>C</div>
-          <h1>CO4Kids Events</h1>
+          <h1 style={{ fontSize: '2.2rem', margin: 0, fontWeight: 800, letterSpacing: '-0.5px' }}>
+            <span style={{ color: 'white' }}>CO</span>
+            <span style={{ color: 'var(--color-yellow)' }}>4</span>
+            <span style={{ color: 'white' }}>Kids</span>
+          </h1>
+          <span style={{ color: 'white', marginLeft: '10px', opacity: 0.8, fontSize: '1.2rem', alignSelf: 'flex-end', paddingBottom: '4px' }}>Events</span>
         </div>
         <nav className="header-nav">
           <span 
