@@ -7,35 +7,43 @@ export default function IPadCamera({ onPhotoTaken, onClose }) {
   const [email, setEmail] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [status, setStatus] = useState('');
+  const [facingMode, setFacingMode] = useState('environment');
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
-  // Initialize Camera
+  // Initialize Camera automatically when facingMode changes or when we clear photoDataUrl
   useEffect(() => {
+    let currentStream = null;
+
     async function startCamera() {
       try {
         const mediaStream = await navigator.mediaDevices.getUserMedia({ 
-          video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
+          video: { facingMode, width: { ideal: 1920 }, height: { ideal: 1080 } },
           audio: false
         });
-        setStream(mediaStream);
+        currentStream = mediaStream;
         if (videoRef.current) {
           videoRef.current.srcObject = mediaStream;
+          // IMPORTANT: Mirror the video explicitly via CSS if it's the front camera so the user isn't confused
+          videoRef.current.style.transform = facingMode === 'user' ? 'scaleX(-1)' : 'scaleX(1)';
         }
       } catch (err) {
         console.error("Camera access denied:", err);
       }
     }
-    startCamera();
+
+    if (!photoDataUrl) {
+      startCamera();
+    }
 
     return () => {
-      // Cleanup stream when component unmounts
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
+      // Auto-cleanup the stream when taking a photo or unmounting!
+      if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
       }
     };
-  }, []);
+  }, [facingMode, photoDataUrl]);
 
   const handleCapture = () => {
     if (!videoRef.current || !canvasRef.current) return;
@@ -49,34 +57,24 @@ export default function IPadCamera({ onPhotoTaken, onClose }) {
     
     const ctx = canvas.getContext('2d');
     
+    // Mirror the final image data if it was the front camera so they don't get a backward photo
+    if (facingMode === 'user') {
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+    }
+
     // Draw the main video frame
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     
     // Convert to target base64 URL
     const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
     setPhotoDataUrl(dataUrl);
-
-    // Stop streams
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      setStream(null);
-    }
   };
 
-  const handleRetake = async () => {
+  const handleRetake = () => {
     setPhotoDataUrl(null);
     setStatus('');
     setEmail('');
-    try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
-        audio: false
-      });
-      setStream(mediaStream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-      }
-    } catch(err) {}
   };
 
   const handleSubmitEmail = async (e) => {
@@ -133,6 +131,18 @@ export default function IPadCamera({ onPhotoTaken, onClose }) {
         <button onClick={onClose} style={{ padding: '10px 20px', borderRadius: '8px', background: '#333', color: 'white', border: 'none', fontSize: '1rem', cursor: 'pointer' }}>
           Back to Gallery
         </button>
+        {!photoDataUrl && (
+          <button 
+            type="button"
+            onClick={() => setFacingMode(prev => prev === 'environment' ? 'user' : 'environment')} 
+            style={{ padding: '10px 20px', borderRadius: '8px', background: '#49c4b7', color: 'white', border: 'none', fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+          >
+            <svg fill="currentColor" viewBox="0 0 20 20" style={{ width: '20px', height: '20px' }}>
+              <path d="M4 4l-4 4h3v6A2 2 0 005 16h6v-2H5V8h3L4 4zm16 12l-4-4h-3V6a2 2 0 00-2-2H5v2h6v6h-3l4 4z"></path>
+            </svg>
+            Flip Camera
+          </button>
+        )}
       </div>
 
       {!photoDataUrl ? (
