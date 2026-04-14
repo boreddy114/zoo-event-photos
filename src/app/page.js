@@ -1,15 +1,15 @@
 "use client";
 import { useState } from 'react';
-import UploadForm from '@/components/UploadForm';
 import PhotoGallery from '@/components/PhotoGallery';
+import IPadCamera from '@/components/IPadCamera';
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState('gallery'); // 'gallery' | 'upload'
+  const [showCamera, setShowCamera] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  const handleUploadSuccess = () => {
+  const handlePhotoTaken = () => {
+    setShowCamera(false);
     setRefreshTrigger(prev => prev + 1);
-    setActiveTab('gallery');
   };
 
   return (
@@ -21,69 +21,77 @@ export default function Home() {
             <span style={{ color: 'var(--color-yellow)' }}>4</span>
             <span style={{ color: 'white' }}>Kids</span>
           </h1>
-          <span style={{ color: 'white', marginLeft: '10px', opacity: 0.8, fontSize: '1.2rem', alignSelf: 'flex-end', paddingBottom: '4px' }}>Events</span>
+          <span style={{ color: 'white', marginLeft: '10px', opacity: 0.8, fontSize: '1.2rem', alignSelf: 'flex-end', paddingBottom: '4px' }}>Event Photos</span>
         </div>
-        <nav className="header-nav">
-          <span 
-            className={`nav-link ${activeTab === 'gallery' ? 'active' : ''}`}
-            onClick={() => setActiveTab('gallery')}
-          >
-            Parents
-          </span>
-          <span 
-            className={`nav-link ${activeTab === 'upload' ? 'active' : ''}`}
-            onClick={() => setActiveTab('upload')}
-          >
-            Photographer
-          </span>
-        </nav>
       </header>
 
       {/* Hero section */}
-      {(activeTab === 'gallery' || activeTab === 'upload') && (
+      {!showCamera && (
         <div className="container">
-          <div className="hero-split">
-            <div className="hero-pane-left">
-              <h2>Family Fun Moments</h2>
-              <p>Relive the magic of our zoo event. Find your children's moments and share them instantly!</p>
-              {activeTab === 'upload' && (
-                <button className="btn btn-secondary" onClick={() => setActiveTab('gallery')}>
-                  View Gallery Instead
-                </button>
-              )}
+          <div className="hero-split" style={{ position: 'relative', overflow: 'hidden' }}>
+            <div className="hero-pane-left" style={{ flex: 1 }}>
+              <h2>Capture the Magic</h2>
+              <p>Welcome to our exclusive event! Follow the link or click below to take a picture of your family in front of our magical frames.</p>
+              
+              <button 
+                onClick={() => setShowCamera(true)}
+                style={{
+                  marginTop: '1.5rem',
+                  padding: '16px 32px',
+                  fontSize: '1.2rem',
+                  fontWeight: 'bold',
+                  backgroundColor: 'var(--color-yellow)',
+                  color: 'var(--color-navy)',
+                  border: 'none',
+                  borderRadius: '30px',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px'
+                }}
+              >
+                📸 Open Camera Kiosk
+              </button>
             </div>
-            <div className="hero-pane-right">
-              <h2>Create Awareness</h2>
-              <p>Together, helping end child abuse and neglect in Colorado by building strong families.</p>
+            <div className="hero-pane-right" style={{ flex: 1 }}>
+              <h2>Together We Build Strong Families</h2>
+              <p>Relive the magic of our zoo event. Find your children's moments and share them instantly!</p>
             </div>
           </div>
         </div>
       )}
 
       {/* Main Content Area */}
-      <div className="container" style={{ paddingTop: '0' }}>
-        {activeTab === 'upload' && (
-          <UploadForm onUploadSuccess={handleUploadSuccess} />
-        )}
-        
-        {activeTab === 'gallery' && (
+      {!showCamera && (
+        <div className="container" style={{ paddingTop: '0' }}>
           <div style={{ marginTop: '2rem' }}>
             <h2 style={{ fontSize: '2rem', marginBottom: '1rem', borderBottom: '2px solid var(--color-teal)', paddingBottom: '0.5rem', display: 'inline-block' }}>
               Event Gallery
             </h2>
             <p style={{ color: 'var(--color-text-light)', marginBottom: '2rem' }}>
-              Click on any photo to have it sent directly to your email inbox!
+              Browse the latest captures. Every smile brings us closer together!
             </p>
             <PhotoGallery refreshTrigger={refreshTrigger} />
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Interactive Camera Component */}
+      {showCamera && (
+        <IPadCamera 
+          onClose={() => setShowCamera(false)} 
+          onPhotoTaken={handlePhotoTaken} 
+        />
+      )}
 
       {/* Footer */}
-      <footer style={{ backgroundColor: 'var(--color-navy)', color: 'white', padding: '3rem 2rem', textAlign: 'center', marginTop: '4rem' }}>
-        <p>© {new Date().getFullYear()} CO4Kids. Building stronger families together.</p>
-        <p style={{ fontSize: '0.9rem', color: '#888', marginTop: '1rem' }}>This app is a demonstration created for the Zoo Event.</p>
-      </footer>
+      {!showCamera && (
+        <footer style={{ backgroundColor: 'var(--color-navy)', color: 'white', padding: '3rem 2rem', textAlign: 'center', marginTop: '4rem' }}>
+          <p>© {new Date().getFullYear()} CO4Kids. Building stronger families together.</p>
+          <p style={{ fontSize: '0.9rem', color: '#888', marginTop: '1rem' }}>This app is a demonstration created for the Zoo Event.</p>
+        </footer>
+      )}
     </main>
   );
 }
