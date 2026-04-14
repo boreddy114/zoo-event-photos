@@ -89,7 +89,8 @@ export default function Home() {
       {!showCamera && (
         <footer style={{ backgroundColor: 'var(--color-navy)', color: 'white', padding: '3rem 2rem', textAlign: 'center', marginTop: '4rem' }}>
           <p>© {new Date().getFullYear()} CO4Kids. Building stronger families together.</p>
-          <p style={{ fontSize: '0.9rem', color: '#888', marginTop: '1rem' }}>This app is a demonstration created for the Zoo Event.</p>
+          <p style={{ fontSize: '1rem', color: 'var(--color-teal)', marginTop: '1rem', fontWeight: 'bold' }}>Developed by Bo</p>
+          <p style={{ fontSize: '0.85rem', color: '#888', marginTop: '0.5rem' }}>Donated for the Zoo Event.</p>
         </footer>
       )}
     </main>
