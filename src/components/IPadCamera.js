@@ -122,7 +122,7 @@ export default function IPadCamera({ onPhotoTaken, onClose }) {
     <div style={{
       position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', 
       backgroundColor: '#000', zIndex: 9999, display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center'
+      alignItems: 'center', justifyContent: 'center', overflowY: 'auto'
     }}>
       
       {/* Hidden Canvas for processing captures */}
@@ -159,8 +159,8 @@ export default function IPadCamera({ onPhotoTaken, onClose }) {
           />
         </>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', height: '100%', background: '#f5f5f5' }}>
-          <div style={{ width: '100%', maxWidth: '600px', padding: '20px', margin: 'auto', background: 'white', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', textAlign: 'center' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', height: '100%', background: '#f5f5f5', overflowY: 'auto' }}>
+          <div style={{ width: '100%', maxWidth: '600px', padding: '20px', margin: 'auto', background: 'white', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', textAlign: 'center', marginTop: '40px', marginBottom: '40px' }}>
             
             <div style={{ position: 'relative', width: '100%', marginBottom: '20px' }}>
               <img src={photoDataUrl} alt="Captured" style={{ width: '100%', borderRadius: '12px', display: 'block' }} />
