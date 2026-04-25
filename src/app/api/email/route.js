@@ -51,37 +51,21 @@ export async function POST(request) {
     }
 
     const info = await transporter.sendMail({
-      from: `"CO4Kids Zoo Event" <${process.env.SMTP_USER || "hello@co4kids.org"}>`,
+      from: `"CO4Kids Resource Fair" <${process.env.SMTP_USER || "hello@co4kids.org"}>`,
       to: email,
-      subject: "Your wonderful memory from the Zoo Event! 🐘",
+      subject: "Your wonderful memory from the Resource Fair! 📸",
       text: "Attached is your photo from the event. We hope you had a great time!",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #0F2046;">
           <div style="background-color: #0F2046; padding: 20px; text-align: center; border-radius: 12px 12px 0 0;">
-            <h1 style="color: white; margin: 0;">CO4Kids Zoo Event</h1>
+            <h1 style="color: white; margin: 0;">CO4Kids Resource Fair</h1>
           </div>
           <div style="padding: 20px; background-color: #f7f9fc; border: 1px solid #eee; border-radius: 0 0 12px 12px;">
             <h2 style="color: #49c4b7;">Hello!</h2>
-            <p style="font-size: 16px; line-height: 1.5;">Thank you for attending our CO4Kids family event. Here is the special photo we captured for you today.</p>
+            <p style="font-size: 16px; line-height: 1.5;">Thank you for attending our CO4Kids Resource Fair. Here is the special photo we captured for you today.</p>
             ${embeddedHtmlImage}
             <p style="font-size: 16px; line-height: 1.5; text-align: center;">We hope to see you at future events!</p>
             
-            <div style="text-align: center; margin: 30px 0; padding: 20px; background-color: white; border-radius: 8px;">
-              <p style="font-size: 16px; font-weight: bold; color: #0F2046; margin-top: 0;">Share your memory!</p>
-              
-              <a href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(photoUrl)}" style="display: inline-block; background-color: #1877F2; color: white; text-decoration: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; margin: 5px;">
-                Share on Facebook
-              </a>
-              
-              <a href="https://twitter.com/intent/tweet?text=${encodeURIComponent('Had a great time at the CO4Kids Zoo Event!')}&url=${encodeURIComponent(photoUrl)}" style="display: inline-block; background-color: #000000; color: white; text-decoration: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; margin: 5px;">
-                Share on X
-              </a>
-
-              <p style="font-size: 14px; color: #666; margin-bottom: 0; margin-top: 15px;">
-                <strong>Instagram:</strong> Since Instagram doesn't allow web-links, just hold down or save the photo to your phone, then upload it to your Story and tag <strong>@CO4Kids</strong>!
-              </p>
-            </div>
-
             <hr style="border: 0; border-top: 1px solid #ccc; margin: 20px 0;">
             <p style="font-size: 12px; color: #888; text-align: center;">If you did not request this photo, you can safely ignore this email.</p>
           </div>
