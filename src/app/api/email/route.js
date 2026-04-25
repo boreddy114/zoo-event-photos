@@ -65,6 +65,23 @@ export async function POST(request) {
             <p style="font-size: 16px; line-height: 1.5;">Thank you for attending our CO4Kids family event. Here is the special photo we captured for you today.</p>
             ${embeddedHtmlImage}
             <p style="font-size: 16px; line-height: 1.5; text-align: center;">We hope to see you at future events!</p>
+            
+            <div style="text-align: center; margin: 30px 0; padding: 20px; background-color: white; border-radius: 8px;">
+              <p style="font-size: 16px; font-weight: bold; color: #0F2046; margin-top: 0;">Share your memory!</p>
+              
+              <a href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(photoUrl)}" style="display: inline-block; background-color: #1877F2; color: white; text-decoration: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; margin: 5px;">
+                Share on Facebook
+              </a>
+              
+              <a href="https://twitter.com/intent/tweet?text=${encodeURIComponent('Had a great time at the CO4Kids Zoo Event!')}&url=${encodeURIComponent(photoUrl)}" style="display: inline-block; background-color: #000000; color: white; text-decoration: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; margin: 5px;">
+                Share on X
+              </a>
+
+              <p style="font-size: 14px; color: #666; margin-bottom: 0; margin-top: 15px;">
+                <strong>Instagram:</strong> Since Instagram doesn't allow web-links, just hold down or save the photo to your phone, then upload it to your Story and tag <strong>@CO4Kids</strong>!
+              </p>
+            </div>
+
             <hr style="border: 0; border-top: 1px solid #ccc; margin: 20px 0;">
             <p style="font-size: 12px; color: #888; text-align: center;">If you did not request this photo, you can safely ignore this email.</p>
           </div>
