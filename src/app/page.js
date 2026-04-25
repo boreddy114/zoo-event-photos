@@ -18,9 +18,15 @@ export default function Home() {
     setRefreshTrigger(prev => prev + 1);
   };
 
+  const handleSwitchMode = () => {
+    Cookies.remove('event_auth');
+    Cookies.remove('user_role');
+    window.location.href = '/login';
+  };
+
   return (
     <main>
-      <header className="header">
+      <header className="header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div className="header-logo">
           <h1 style={{ fontSize: '2.2rem', margin: 0, fontWeight: 800, letterSpacing: '-0.5px' }}>
             <span style={{ color: 'white' }}>CO</span>
@@ -29,6 +35,24 @@ export default function Home() {
           </h1>
           <span style={{ color: 'white', marginLeft: '10px', opacity: 0.8, fontSize: '1.2rem', alignSelf: 'flex-end', paddingBottom: '4px' }}>Event Photos</span>
         </div>
+        
+        {!showCamera && (
+          <button 
+            onClick={handleSwitchMode}
+            style={{ 
+              background: 'rgba(255, 255, 255, 0.2)', 
+              color: 'white', 
+              border: '1px solid rgba(255,255,255,0.4)', 
+              padding: '8px 16px', 
+              borderRadius: '20px', 
+              cursor: 'pointer',
+              fontSize: '0.9rem',
+              fontWeight: 'bold'
+            }}
+          >
+            Switch Mode
+          </button>
+        )}
       </header>
 
       {/* Hero section */}
