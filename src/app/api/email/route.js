@@ -51,7 +51,7 @@ export async function POST(request) {
     }
 
     const info = await transporter.sendMail({
-      from: '"CO4Kids Zoo Event" <hello@co4kids.org>',
+      from: `"CO4Kids Zoo Event" <${process.env.SMTP_USER || "hello@co4kids.org"}>`,
       to: email,
       subject: "Your wonderful memory from the Zoo Event! 🐘",
       text: "Attached is your photo from the event. We hope you had a great time!",
