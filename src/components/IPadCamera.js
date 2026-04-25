@@ -8,6 +8,7 @@ export default function IPadCamera({ onPhotoTaken, onClose }) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [status, setStatus] = useState('');
   const [facingMode, setFacingMode] = useState('environment');
+  const [zoom, setZoom] = useState(1);
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -25,8 +26,6 @@ export default function IPadCamera({ onPhotoTaken, onClose }) {
         currentStream = mediaStream;
         if (videoRef.current) {
           videoRef.current.srcObject = mediaStream;
-          // IMPORTANT: Mirror the video explicitly via CSS if it's the front camera so the user isn't confused
-          videoRef.current.style.transform = facingMode === 'user' ? 'scaleX(-1)' : 'scaleX(1)';
         }
       } catch (err) {
         console.error("Camera access denied:", err);
@@ -63,8 +62,18 @@ export default function IPadCamera({ onPhotoTaken, onClose }) {
       ctx.scale(-1, 1);
     }
 
-    // Draw the main video frame
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    // Calculate source rect from video depending on zoom level
+    const sourceWidth = video.videoWidth / zoom;
+    const sourceHeight = video.videoHeight / zoom;
+    const sourceX = (video.videoWidth - sourceWidth) / 2;
+    const sourceY = (video.videoHeight - sourceHeight) / 2;
+
+    // Draw only the zoomed, centered portion of the video onto the full canvas
+    ctx.drawImage(
+      video, 
+      sourceX, sourceY, sourceWidth, sourceHeight, // source tracking
+      0, 0, canvas.width, canvas.height            // destination rect
+    );
     
     // Convert to target base64 URL
     const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
@@ -75,6 +84,7 @@ export default function IPadCamera({ onPhotoTaken, onClose }) {
     setPhotoDataUrl(null);
     setStatus('');
     setEmail('');
+    setZoom(1); // Reset zoom
   };
 
   const handleSubmitEmail = async (e) => {
@@ -149,14 +159,39 @@ export default function IPadCamera({ onPhotoTaken, onClose }) {
         <>
           {/* Removed Overlay Selector per user request */}
 
-          <div style={{ position: 'relative', width: '90%', height: '70%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ position: 'relative', width: '90%', height: '70%', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderRadius: '24px' }}>
             {/* The Video Feed */}
             <video 
               ref={videoRef} 
               autoPlay 
               playsInline 
-              style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '24px' }} 
+              style={{ 
+                width: '100%', 
+                height: '100%', 
+                objectFit: 'contain', 
+                transform: `scaleX(${facingMode === 'user' ? -zoom : zoom}) scaleY(${zoom})`,
+                transition: 'transform 0.1s ease-out'
+              }} 
             />
+          </div>
+
+          {/* Zoom Slider Controls */}
+          <div style={{
+            position: 'absolute', bottom: '140px', display: 'flex', alignItems: 'center', gap: '15px', 
+            background: 'rgba(0,0,0,0.6)', padding: '12px 25px', borderRadius: '30px', zIndex: 10,
+            backdropFilter: 'blur(5px)'
+          }}>
+            <span style={{color: 'white', fontWeight: 'bold', fontSize: '1.2rem', cursor: 'pointer'}} onClick={() => setZoom(z => Math.max(1, z - 0.5))}>-</span>
+            <input 
+              type="range" 
+              min="1" 
+              max="4" 
+              step="0.1" 
+              value={zoom} 
+              onChange={(e) => setZoom(parseFloat(e.target.value))} 
+              style={{ width: '200px', cursor: 'pointer', accentColor: 'var(--color-yellow, #ffd700)' }} 
+            />
+            <span style={{color: 'white', fontWeight: 'bold', fontSize: '1.2rem', cursor: 'pointer'}} onClick={() => setZoom(z => Math.min(4, z + 0.5))}>+</span>
           </div>
 
           {/* Capture Button */}
