@@ -1,11 +1,17 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import Cookies from 'js-cookie';
 import PhotoGallery from '@/components/PhotoGallery';
 import IPadCamera from '@/components/IPadCamera';
 
 export default function Home() {
   const [showCamera, setShowCamera] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [userRole, setUserRole] = useState('guest');
+
+  useEffect(() => {
+    setUserRole(Cookies.get('user_role') || 'guest');
+  }, []);
 
   const handlePhotoTaken = () => {
     setShowCamera(false);
@@ -80,6 +86,7 @@ export default function Home() {
       {/* Interactive Camera Component */}
       {showCamera && (
         <IPadCamera 
+          mode={userRole}
           onClose={() => setShowCamera(false)} 
           onPhotoTaken={handlePhotoTaken} 
         />

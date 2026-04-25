@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from 'react';
 
-export default function IPadCamera({ onPhotoTaken, onClose }) {
+export default function IPadCamera({ mode = 'guest', onPhotoTaken, onClose }) {
   const [stream, setStream] = useState(null);
   const [photoDataUrl, setPhotoDataUrl] = useState(null);
   const [email, setEmail] = useState('');
@@ -126,6 +126,33 @@ export default function IPadCamera({ onPhotoTaken, onClose }) {
     }, 1500);
   };
 
+  const handleVolunteerUpload = async () => {
+    if (!photoDataUrl) return;
+    setStatus('Uploading directly to gallery...');
+    setIsProcessing(true);
+
+    try {
+      const uRes = await fetch('/api/upload-base64', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: photoDataUrl })
+      });
+      const uData = await uRes.json();
+      if (uData.success) {
+        setStatus('Success! Photo added to gallery.');
+      } else {
+        setStatus('Upload failed. Try again.');
+      }
+    } catch (err) {
+      setStatus('Error during upload.');
+    } finally {
+      setTimeout(() => {
+        handleRetake();
+        setIsProcessing(false);
+      }, 1500);
+    }
+  };
+
   return (
     <div style={{
       position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', 
@@ -211,28 +238,45 @@ export default function IPadCamera({ onPhotoTaken, onClose }) {
               <img src={photoDataUrl} alt="Captured" style={{ width: '100%', borderRadius: '12px', display: 'block' }} />
             </div>
 
-            <h2 style={{ color: '#0f2046', marginBottom: '10px' }}>Looking Great!</h2>
-            <p style={{ color: '#666', marginBottom: '20px' }}>Enter the family's email address to send them the photo.</p>
-
-            <form onSubmit={handleSubmitEmail}>
-              <input 
-                type="email" 
-                required 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="family@example.com"
-                style={{ width: '100%', padding: '14px', fontSize: '1.2rem', borderRadius: '8px', border: '1px solid #ccc', marginBottom: '20px', textAlign: 'center' }}
-                disabled={isProcessing}
-              />
-              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-                <button type="button" onClick={handleRetake} disabled={isProcessing} style={{ padding: '14px 24px', borderRadius: '8px', border: 'none', background: '#ccc', color: '#333', fontSize: '1.1rem', cursor: 'pointer' }}>
-                  Retake
-                </button>
-                <button type="submit" disabled={isProcessing || !email} style={{ padding: '14px 24px', borderRadius: '8px', border: 'none', background: '#49c4b7', color: 'white', fontSize: '1.1rem', cursor: 'pointer', flexGrow: 1 }}>
-                  {isProcessing ? 'Sending...' : 'Send Email & Global Gallery'}
-                </button>
+            {mode === 'volunteer' ? (
+              <div style={{ textAlign: 'center' }}>
+                <h2 style={{ color: '#0f2046', marginBottom: '10px' }}>Volunteer Mode</h2>
+                <p style={{ color: '#666', marginBottom: '20px' }}>Upload directly to the global event gallery without email.</p>
+                <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                  <button type="button" onClick={handleRetake} disabled={isProcessing} style={{ padding: '14px 24px', borderRadius: '8px', border: 'none', background: '#ccc', color: '#333', fontSize: '1.1rem', cursor: 'pointer' }}>
+                    Retake
+                  </button>
+                  <button type="button" onClick={handleVolunteerUpload} disabled={isProcessing} style={{ padding: '14px 24px', borderRadius: '8px', border: 'none', background: '#49c4b7', color: 'white', fontSize: '1.1rem', cursor: 'pointer', flexGrow: 1 }}>
+                    {isProcessing ? 'Uploading...' : 'Upload to Gallery'}
+                  </button>
+                </div>
               </div>
-            </form>
+            ) : (
+              <>
+                <h2 style={{ color: '#0f2046', marginBottom: '10px' }}>Looking Great!</h2>
+                <p style={{ color: '#666', marginBottom: '20px' }}>Enter the family's email address to send them the photo.</p>
+
+                <form onSubmit={handleSubmitEmail}>
+                  <input 
+                    type="email" 
+                    required 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="family@example.com"
+                    style={{ width: '100%', padding: '14px', fontSize: '1.2rem', borderRadius: '8px', border: '1px solid #ccc', marginBottom: '20px', textAlign: 'center' }}
+                    disabled={isProcessing}
+                  />
+                  <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                    <button type="button" onClick={handleRetake} disabled={isProcessing} style={{ padding: '14px 24px', borderRadius: '8px', border: 'none', background: '#ccc', color: '#333', fontSize: '1.1rem', cursor: 'pointer' }}>
+                      Retake
+                    </button>
+                    <button type="submit" disabled={isProcessing || !email} style={{ padding: '14px 24px', borderRadius: '8px', border: 'none', background: '#49c4b7', color: 'white', fontSize: '1.1rem', cursor: 'pointer', flexGrow: 1 }}>
+                      {isProcessing ? 'Sending...' : 'Send Email & Global Gallery'}
+                    </button>
+                  </div>
+                </form>
+              </>
+            )}
             
             {status && <p style={{ marginTop: '20px', fontWeight: 'bold', color: status.includes('Success') ? 'green' : '#333' }}>{status}</p>}
 

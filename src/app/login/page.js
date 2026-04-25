@@ -12,9 +12,15 @@ export default function Login() {
     e.preventDefault();
     // Use an environment variable or a simple hardcoded code for the kiosk
     const validPasscode = process.env.NEXT_PUBLIC_EVENT_PASSCODE || 'co4kids';
+    const volunteerPasscode = process.env.NEXT_PUBLIC_VOLUNTEER_PASSCODE || 'co2kids';
 
     if (passcode.toLowerCase() === validPasscode.toLowerCase()) {
       Cookies.set('event_auth', 'true', { expires: 1 }); // expires in 1 day
+      Cookies.set('user_role', 'guest', { expires: 1 });
+      router.push('/');
+    } else if (passcode.toLowerCase() === volunteerPasscode.toLowerCase()) {
+      Cookies.set('event_auth', 'true', { expires: 1 }); // Still set event_auth so proxy middleware passes them
+      Cookies.set('user_role', 'volunteer', { expires: 1 });
       router.push('/');
     } else {
       setError('Incorrect passcode. Please try again.');
