@@ -9,8 +9,7 @@ export async function GET() {
       const { data, error } = await supabase
         .from('event_photos')
         .select('*')
-        .order('created_at', { ascending: false })
-        .limit(30);
+        .order('created_at', { ascending: false });
 
       if (!error && data) {
         // Map Supabase rows to the format expected by the frontend
