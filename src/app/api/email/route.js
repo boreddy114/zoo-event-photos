@@ -3,10 +3,12 @@ import nodemailer from 'nodemailer';
 
 export async function POST(request) {
   try {
-    const { email, photoUrl } = await request.json();
+    const { email, photoUrl, photoUrls } = await request.json();
 
-    if (!email || !photoUrl) {
-      return NextResponse.json({ success: false, error: "Email and photo URL are required" }, { status: 400 });
+    const urlsToProcess = photoUrls || (photoUrl ? [photoUrl] : []);
+
+    if (!email || urlsToProcess.length === 0) {
+      return NextResponse.json({ success: false, error: "Email and at least one photo URL are required" }, { status: 400 });
     }
 
     let transporter;
@@ -40,15 +42,18 @@ export async function POST(request) {
     let attachments = [];
     let embeddedHtmlImage = '';
 
-    if (photoUrl.startsWith('http')) {
-      // It's a live Supabase URL! Attach it natively.
-      attachments.push({ filename: 'zoo-event-photo.jpg', path: photoUrl });
-      embeddedHtmlImage = `<div style="text-align: center; margin: 20px 0;"><img src="${photoUrl}" alt="Your Event Photo" style="max-width: 100%; border-radius: 12px;" /></div>`;
-    } else if (photoUrl.startsWith('data:image')) {
-       // Fallback for memory mode
-       attachments.push({ path: photoUrl, cid: 'eventphoto' });
-       embeddedHtmlImage = `<div style="text-align: center; margin: 20px 0;"><img src="cid:eventphoto" alt="Your Event Photo" style="max-width: 100%; border-radius: 12px;" /></div>`;
-    }
+    urlsToProcess.forEach((url, index) => {
+      const cid = `eventphoto${index}`;
+      if (url.startsWith('http')) {
+        // It's a live Supabase URL! Attach it natively.
+        attachments.push({ filename: `zoo-event-photo-${index + 1}.jpg`, path: url });
+        embeddedHtmlImage += `<div style="text-align: center; margin: 20px 0;"><img src="${url}" alt="Your Event Photo" style="max-width: 100%; border-radius: 12px;" /></div>`;
+      } else if (url.startsWith('data:image')) {
+         // Fallback for memory mode
+         attachments.push({ path: url, cid: cid });
+         embeddedHtmlImage += `<div style="text-align: center; margin: 20px 0;"><img src="cid:${cid}" alt="Your Event Photo" style="max-width: 100%; border-radius: 12px;" /></div>`;
+      }
+    });
 
     const info = await transporter.sendMail({
       from: `"CO4Kids Resource Fair" <${process.env.SMTP_USER || "hello@co4kids.org"}>`,

@@ -3,7 +3,8 @@ import { useState, useRef, useEffect } from 'react';
 
 export default function IPadCamera({ mode = 'guest', onPhotoTaken, onClose }) {
   const [stream, setStream] = useState(null);
-  const [photoDataUrl, setPhotoDataUrl] = useState(null);
+  const [capturedPhotos, setCapturedPhotos] = useState([]);
+  const [isReviewing, setIsReviewing] = useState(false);
   const [email, setEmail] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [status, setStatus] = useState('');
@@ -32,7 +33,7 @@ export default function IPadCamera({ mode = 'guest', onPhotoTaken, onClose }) {
       }
     }
 
-    if (!photoDataUrl) {
+    if (!isReviewing) {
       startCamera();
     }
 
@@ -42,7 +43,7 @@ export default function IPadCamera({ mode = 'guest', onPhotoTaken, onClose }) {
         currentStream.getTracks().forEach(track => track.stop());
       }
     };
-  }, [facingMode, photoDataUrl]);
+  }, [facingMode, isReviewing]);
 
   const handleCapture = () => {
     if (!videoRef.current || !canvasRef.current) return;
@@ -53,7 +54,6 @@ export default function IPadCamera({ mode = 'guest', onPhotoTaken, onClose }) {
     // Set canvas dimensions to match video stream
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
-    
     const ctx = canvas.getContext('2d');
     
     // Mirror the final image data if it was the front camera so they don't get a backward photo
@@ -77,39 +77,55 @@ export default function IPadCamera({ mode = 'guest', onPhotoTaken, onClose }) {
     
     // Convert to target base64 URL
     const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-    setPhotoDataUrl(dataUrl);
+    setCapturedPhotos(prev => [...prev, dataUrl]);
   };
 
-  const handleRetake = () => {
-    setPhotoDataUrl(null);
+  const handleRetakeAll = () => {
+    setCapturedPhotos([]);
+    setIsReviewing(false);
     setStatus('');
     setEmail('');
     setZoom(1); // Reset zoom
   };
 
+  const removePhoto = (index) => {
+    setCapturedPhotos(prev => prev.filter((_, i) => i !== index));
+    if (capturedPhotos.length === 1) { // if there was only 1 and we are removing it
+      setIsReviewing(false);
+    }
+  };
+
   const handleSubmitEmail = async (e) => {
     e.preventDefault();
-    if (!email || !photoDataUrl) return;
+    if (!email || capturedPhotos.length === 0) return;
 
-    // Immediately kick off the background job so the user isn't frozen!
-    const capturedData = photoDataUrl;
+    setStatus('Uploading and sending...');
+    setIsProcessing(true);
+
+    const capturedData = [...capturedPhotos];
     const capturedEmail = email;
 
     // Fire and forget upload and email
     (async () => {
       try {
-        const uRes = await fetch('/api/upload-base64', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: capturedData })
-        });
+        let uploadedUrls = [];
+        for (const data of capturedData) {
+          const uRes = await fetch('/api/upload-base64', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image: data })
+          });
+          const uData = await uRes.json();
+          if (uData.success) {
+            uploadedUrls.push(uData.fileUrl);
+          }
+        }
         
-        const uData = await uRes.json();
-        if (uData.success) {
+        if (uploadedUrls.length > 0) {
           await fetch('/api/email', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: capturedEmail, photoUrl: uData.fileUrl })
+            body: JSON.stringify({ email: capturedEmail, photoUrls: uploadedUrls })
           });
         }
       } catch (err) {
@@ -117,39 +133,34 @@ export default function IPadCamera({ mode = 'guest', onPhotoTaken, onClose }) {
       }
     })();
 
-    // Show a blazing fast success and reset the camera for the next person in line
-    setStatus('Success! Photo is sending...');
-    setIsProcessing(true); // lock the form briefly
+    setStatus('Success! Photos are sending...');
     setTimeout(() => {
-      handleRetake();
+      handleRetakeAll();
       setIsProcessing(false);
-    }, 1500);
+    }, 2000);
   };
 
   const handleVolunteerUpload = async () => {
-    if (!photoDataUrl) return;
-    setStatus('Uploading directly to gallery...');
+    if (capturedPhotos.length === 0) return;
+    setStatus('Uploading to gallery...');
     setIsProcessing(true);
 
     try {
-      const uRes = await fetch('/api/upload-base64', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: photoDataUrl })
-      });
-      const uData = await uRes.json();
-      if (uData.success) {
-        setStatus('Success! Photo added to gallery.');
-      } else {
-        setStatus('Upload failed. Try again.');
+      for (const data of capturedPhotos) {
+        await fetch('/api/upload-base64', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: data })
+        });
       }
+      setStatus('Success! Photos added to gallery.');
     } catch (err) {
       setStatus('Error during upload.');
     } finally {
       setTimeout(() => {
-        handleRetake();
+        handleRetakeAll();
         setIsProcessing(false);
-      }, 1500);
+      }, 2000);
     }
   };
 
@@ -163,28 +174,24 @@ export default function IPadCamera({ mode = 'guest', onPhotoTaken, onClose }) {
       {/* Hidden Canvas for processing captures */}
       <canvas ref={canvasRef} style={{ display: 'none' }} />
 
-      {/* Top Header Controls */}
-      <div style={{ position: 'absolute', top: 20, left: 20, zIndex: 10, display: 'flex', gap: '10px' }}>
-        <button onClick={onClose} style={{ padding: '10px 20px', borderRadius: '8px', background: '#333', color: 'white', border: 'none', fontSize: '1rem', cursor: 'pointer' }}>
-          Back to Gallery
-        </button>
-        {!photoDataUrl && (
-          <button 
-            type="button"
-            onClick={() => setFacingMode(prev => prev === 'environment' ? 'user' : 'environment')} 
-            style={{ padding: '10px 20px', borderRadius: '8px', background: '#49c4b7', color: 'white', border: 'none', fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
-          >
-            <svg fill="currentColor" viewBox="0 0 20 20" style={{ width: '20px', height: '20px' }}>
-              <path d="M4 4l-4 4h3v6A2 2 0 005 16h6v-2H5V8h3L4 4zm16 12l-4-4h-3V6a2 2 0 00-2-2H5v2h6v6h-3l4 4z"></path>
-            </svg>
-            Flip Camera
-          </button>
-        )}
-      </div>
-
-      {!photoDataUrl ? (
+      {!isReviewing ? (
         <>
-          {/* Removed Overlay Selector per user request */}
+          {/* Top Header Controls */}
+          <div style={{ position: 'absolute', top: 20, left: 20, zIndex: 10, display: 'flex', gap: '10px' }}>
+            <button onClick={onClose} style={{ padding: '10px 20px', borderRadius: '8px', background: '#333', color: 'white', border: 'none', fontSize: '1rem', cursor: 'pointer' }}>
+              Back to Gallery
+            </button>
+            <button 
+              type="button"
+              onClick={() => setFacingMode(prev => prev === 'environment' ? 'user' : 'environment')} 
+              style={{ padding: '10px 20px', borderRadius: '8px', background: '#49c4b7', color: 'white', border: 'none', fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+            >
+              <svg fill="currentColor" viewBox="0 0 20 20" style={{ width: '20px', height: '20px' }}>
+                <path d="M4 4l-4 4h3v6A2 2 0 005 16h6v-2H5V8h3L4 4zm16 12l-4-4h-3V6a2 2 0 00-2-2H5v2h6v6h-3l4 4z"></path>
+              </svg>
+              Flip Camera
+            </button>
+          </div>
 
           <div style={{ position: 'relative', width: '90%', height: '70%', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderRadius: '24px' }}>
             {/* The Video Feed */}
@@ -204,7 +211,7 @@ export default function IPadCamera({ mode = 'guest', onPhotoTaken, onClose }) {
 
           {/* Zoom Slider Controls */}
           <div style={{
-            position: 'absolute', bottom: '140px', display: 'flex', alignItems: 'center', gap: '15px', 
+            position: 'absolute', bottom: '180px', display: 'flex', alignItems: 'center', gap: '15px', 
             background: 'rgba(0,0,0,0.6)', padding: '12px 25px', borderRadius: '30px', zIndex: 10,
             backdropFilter: 'blur(5px)'
           }}>
@@ -221,21 +228,46 @@ export default function IPadCamera({ mode = 'guest', onPhotoTaken, onClose }) {
             <span style={{color: 'white', fontWeight: 'bold', fontSize: '1.2rem', cursor: 'pointer'}} onClick={() => setZoom(z => Math.min(4, z + 0.5))}>+</span>
           </div>
 
+          {/* Captured Photos Queue Indicator */}
+          {capturedPhotos.length > 0 && (
+             <div style={{ position: 'absolute', bottom: '110px', display: 'flex', gap: '10px', overflowX: 'auto', maxWidth: '90%', padding: '10px' }}>
+               {capturedPhotos.map((p, i) => (
+                 <div key={i} style={{ width: '50px', height: '50px', borderRadius: '8px', overflow: 'hidden', border: '2px solid white', flexShrink: 0 }}>
+                   <img src={p} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                 </div>
+               ))}
+               <button 
+                onClick={() => setIsReviewing(true)}
+                style={{ height: '50px', padding: '0 20px', borderRadius: '8px', background: '#49c4b7', color: 'white', border: 'none', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                 Proceed ({capturedPhotos.length}) &rarr;
+               </button>
+             </div>
+          )}
+
           {/* Capture Button */}
           <button 
             onClick={handleCapture}
             style={{
-              position: 'absolute', bottom: '40px', width: '80px', height: '80px', borderRadius: '50%',
+              position: 'absolute', bottom: '20px', width: '80px', height: '80px', borderRadius: '50%',
               backgroundColor: 'white', border: '8px solid #ccc', cursor: 'pointer', outline: 'none',boxShadow: '0 4px 10px rgba(0,0,0,0.3)'
             }}
           />
         </>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', height: '100%', background: '#f5f5f5', overflowY: 'auto' }}>
-          <div style={{ width: '100%', maxWidth: '600px', padding: '20px', margin: 'auto', background: 'white', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', textAlign: 'center', marginTop: '40px', marginBottom: '40px' }}>
+          <div style={{ width: '100%', maxWidth: '800px', padding: '20px', margin: 'auto', background: 'white', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', textAlign: 'center', marginTop: '40px', marginBottom: '40px' }}>
             
-            <div style={{ position: 'relative', width: '100%', marginBottom: '20px' }}>
-              <img src={photoDataUrl} alt="Captured" style={{ width: '100%', borderRadius: '12px', display: 'block' }} />
+            <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '20px', marginBottom: '20px' }}>
+              {capturedPhotos.map((p, i) => (
+                <div key={i} style={{ position: 'relative', width: '200px', flexShrink: 0, borderRadius: '12px', overflow: 'hidden' }}>
+                  <img src={p} alt={`Captured ${i}`} style={{ width: '100%', display: 'block' }} />
+                  <button 
+                    onClick={() => removePhoto(i)} 
+                    style={{ position: 'absolute', top: 10, right: 10, background: 'red', color: 'white', border: 'none', borderRadius: '50%', width: '30px', height: '30px', cursor: 'pointer', fontWeight: 'bold' }}>
+                    &times;
+                  </button>
+                </div>
+              ))}
             </div>
 
             {mode === 'volunteer' ? (
@@ -243,18 +275,18 @@ export default function IPadCamera({ mode = 'guest', onPhotoTaken, onClose }) {
                 <h2 style={{ color: '#0f2046', marginBottom: '10px' }}>Volunteer Mode</h2>
                 <p style={{ color: '#666', marginBottom: '20px' }}>Upload directly to the global event gallery without email.</p>
                 <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-                  <button type="button" onClick={handleRetake} disabled={isProcessing} style={{ padding: '14px 24px', borderRadius: '8px', border: 'none', background: '#ccc', color: '#333', fontSize: '1.1rem', cursor: 'pointer' }}>
-                    Retake
+                  <button type="button" onClick={() => setIsReviewing(false)} disabled={isProcessing} style={{ padding: '14px 24px', borderRadius: '8px', border: 'none', background: '#ccc', color: '#333', fontSize: '1.1rem', cursor: 'pointer' }}>
+                    Take More
                   </button>
                   <button type="button" onClick={handleVolunteerUpload} disabled={isProcessing} style={{ padding: '14px 24px', borderRadius: '8px', border: 'none', background: '#49c4b7', color: 'white', fontSize: '1.1rem', cursor: 'pointer', flexGrow: 1 }}>
-                    {isProcessing ? 'Uploading...' : 'Upload to Gallery'}
+                    {isProcessing ? 'Uploading...' : `Upload ${capturedPhotos.length} to Gallery`}
                   </button>
                 </div>
               </div>
             ) : (
               <>
                 <h2 style={{ color: '#0f2046', marginBottom: '10px' }}>Looking Great!</h2>
-                <p style={{ color: '#666', marginBottom: '20px' }}>Enter the family's email address to send them the photo.</p>
+                <p style={{ color: '#666', marginBottom: '20px' }}>Enter the family's email address to send them these {capturedPhotos.length} {capturedPhotos.length === 1 ? 'photo' : 'photos'}.</p>
 
                 <form onSubmit={handleSubmitEmail}>
                   <input 
@@ -267,11 +299,11 @@ export default function IPadCamera({ mode = 'guest', onPhotoTaken, onClose }) {
                     disabled={isProcessing}
                   />
                   <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-                    <button type="button" onClick={handleRetake} disabled={isProcessing} style={{ padding: '14px 24px', borderRadius: '8px', border: 'none', background: '#ccc', color: '#333', fontSize: '1.1rem', cursor: 'pointer' }}>
-                      Retake
+                    <button type="button" onClick={() => setIsReviewing(false)} disabled={isProcessing} style={{ padding: '14px 24px', borderRadius: '8px', border: 'none', background: '#ccc', color: '#333', fontSize: '1.1rem', cursor: 'pointer' }}>
+                      Take More
                     </button>
                     <button type="submit" disabled={isProcessing || !email} style={{ padding: '14px 24px', borderRadius: '8px', border: 'none', background: '#49c4b7', color: 'white', fontSize: '1.1rem', cursor: 'pointer', flexGrow: 1 }}>
-                      {isProcessing ? 'Sending...' : 'Send Email & Global Gallery'}
+                      {isProcessing ? 'Sending...' : `Send Email & Group Gallery`}
                     </button>
                   </div>
                 </form>
